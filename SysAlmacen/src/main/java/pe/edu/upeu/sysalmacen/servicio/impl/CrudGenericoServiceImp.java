@@ -8,35 +8,50 @@ import pe.edu.upeu.sysalmacen.servicio.ICrudGenericoService;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public abstract class CrudGenericoServiceImp<T,ID> implements ICrudGenericoService<T,ID> {
-    protected abstract ICrudGenericoRepository<T, ID> getRepo();
+public abstract class CrudGenericoServiceImp<E, K> implements ICrudGenericoService<E, K> {
+    
+    // Constantes para mensajes y respuestas
+    private static final String ID_NOT_FOUND_MSG = "ID NOT FOUND: ";
+    private static final String SUCCESS_MESSAGE = "true";
+    private static final String SUCCESS_DETAILS = "Todo Ok";
+    private static final int SUCCESS_STATUS_CODE = 200;
+    
+    protected abstract ICrudGenericoRepository<E, K> getRepo();
 
     @Override
-    public T save(T t) {
-        return getRepo().save(t);
+    public E save(E entity) {
+        return getRepo().save(entity);
     }
+
     @Override
-    public T update(ID id, T t) {
-        getRepo().findById(id).orElseThrow(() -> new ModelNotFoundException("ID NOT FOUND: " + id));
-        return getRepo().save(t);
+    public E update(K id, E entity) {
+        E existingEntity = getRepo().findById(id)
+            .orElseThrow(() -> new ModelNotFoundException(ID_NOT_FOUND_MSG + id));
+        return getRepo().save(entity);
     }
+
     @Override
-    public List<T> findAll() {
+    public List<E> findAll() {
         return getRepo().findAll();
     }
+
     @Override
-    public T findById(ID id) {
-        return getRepo().findById(id).orElseThrow(() -> new ModelNotFoundException("ID NOT FOUND: " + id));
+    public E findById(K id) {
+        return getRepo().findById(id)
+            .orElseThrow(() -> new ModelNotFoundException(ID_NOT_FOUND_MSG + id));
     }
+
     @Override
-    public CustomResponse delete(ID id) {
-        getRepo().findById(id).orElseThrow(() -> new ModelNotFoundException("ID NOT FOUND: " + id));
+    public CustomResponse delete(K id) {
+        E entity = getRepo().findById(id)
+            .orElseThrow(() -> new ModelNotFoundException(ID_NOT_FOUND_MSG + id));
         getRepo().deleteById(id);
-        CustomResponse cer=new CustomResponse();
-        cer.setStatusCode(200);
-        cer.setDatetime(LocalDateTime.now());
-        cer.setMessage("true");
-        cer.setDetails("Todo Ok");
-        return cer;
+        
+        CustomResponse response = new CustomResponse();
+        response.setStatusCode(SUCCESS_STATUS_CODE);
+        response.setDatetime(LocalDateTime.now());
+        response.setMessage(SUCCESS_MESSAGE);
+        response.setDetails(SUCCESS_DETAILS);
+        return response;
     }
 }

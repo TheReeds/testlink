@@ -20,10 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
-//Clase S7
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity //Importante para anotaciones @PreAuthorize
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class WebSecurityConfig {
 
@@ -48,7 +47,6 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        //Desde Spring Boot 3.0+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req

@@ -37,8 +37,6 @@ public class AuthController {
         UsuarioDTO createdUser = userService.register(user);
         final UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(user.user());
         createdUser.setToken(jwtTokenUtil.generateToken(userDetails));
-        //createdUser.setClave("");
-        //createdUser.setToken(userAuthenticationProvider.createToken(createdUser));
         return ResponseEntity.created(URI.create("/users/" + createdUser.getUser())).body(createdUser);
     }
 }
