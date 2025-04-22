@@ -6,36 +6,43 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Component
 @Slf4j
 public class AuthorizeLogic {
 
-    public boolean hasAccess(String path){
-        boolean result = false;
+    private static final Map<String, Set<String>> PATH_ROLES = Map.of(
+        "findAll", Set.of("ADMIN"),
+        "findById", Set.of("USER", "DBA"),
+        "getById", Set.of("USER", "DBA"),
+        "default", Set.of("ROOT")
+    );
 
-        String methodRole = switch(path){
-            case "findAll" -> "ADMIN";
-            case "findById", "getBydId" -> "USER,DBA";
-            default -> "ROOT";
-        };
-
-        String methodRoles[] = methodRole.split(",");
-
+    public boolean hasAccess(String path) {
+        // Obtener roles requeridos para el path
+        Set<String> requiredRoles = PATH_ROLES.getOrDefault(path, PATH_ROLES.get("default"));
+        
+        // Obtener autenticación actual
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        log.info("Username is: " + auth.getName());
+        
+        // Logging de depuración
+        log.debug("Validando acceso para usuario: {} en path: {}", auth.getName(), path);
+        log.debug("Roles requeridos: {}", requiredRoles);
 
-        for(GrantedAuthority grantedAuthority : auth.getAuthorities()){
-            String roleUser = grantedAuthority.getAuthority();
-            log.info("Role is: " + roleUser);
+        Set<String> userRoles = auth.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .map(String::toUpperCase)
+            .collect(Collectors.toSet());
 
-            for(String role : methodRoles){
-                if(roleUser.equalsIgnoreCase(role)){
-                    result = true;
-                    break;
-                }
-            }
-        }
+        log.debug("Roles del usuario: {}", userRoles);
 
-        return result;
+        return requiredRoles.stream()
+            .anyMatch(requiredRole -> 
+                userRoles.contains("ROLE_" + requiredRole) || 
+                userRoles.contains(requiredRole)
+            );
     }
 }

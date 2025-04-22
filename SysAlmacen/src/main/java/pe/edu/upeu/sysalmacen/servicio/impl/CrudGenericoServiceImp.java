@@ -4,7 +4,6 @@ import pe.edu.upeu.sysalmacen.excepciones.CustomResponse;
 import pe.edu.upeu.sysalmacen.excepciones.ModelNotFoundException;
 import pe.edu.upeu.sysalmacen.repositorio.ICrudGenericoRepository;
 import pe.edu.upeu.sysalmacen.servicio.ICrudGenericoService;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,8 +24,10 @@ public abstract class CrudGenericoServiceImp<E, K> implements ICrudGenericoServi
 
     @Override
     public E update(K id, E entity) {
-        E existingEntity = getRepo().findById(id)
-            .orElseThrow(() -> new ModelNotFoundException(ID_NOT_FOUND_MSG + id));
+        // Verificar existencia sin asignar a variable
+        if (!getRepo().existsById(id)) {
+            throw new ModelNotFoundException(ID_NOT_FOUND_MSG + id);
+        }
         return getRepo().save(entity);
     }
 
@@ -43,10 +44,17 @@ public abstract class CrudGenericoServiceImp<E, K> implements ICrudGenericoServi
 
     @Override
     public CustomResponse delete(K id) {
-        E entity = getRepo().findById(id)
-            .orElseThrow(() -> new ModelNotFoundException(ID_NOT_FOUND_MSG + id));
+        // Verificar existencia antes de eliminar
+        if (!getRepo().existsById(id)) {
+            throw new ModelNotFoundException(ID_NOT_FOUND_MSG + id);
+        }
+        
         getRepo().deleteById(id);
         
+        return buildSuccessResponse();
+    }
+
+    private CustomResponse buildSuccessResponse() {
         CustomResponse response = new CustomResponse();
         response.setStatusCode(SUCCESS_STATUS_CODE);
         response.setDatetime(LocalDateTime.now());

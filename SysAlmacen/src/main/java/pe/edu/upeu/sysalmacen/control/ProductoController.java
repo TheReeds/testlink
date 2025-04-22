@@ -53,8 +53,9 @@ public class ProductoController {
     }
 
     @GetMapping("/pageable")
-    public ResponseEntity<org.springframework.data.domain.Page<ProductoDTO>> listPage(Pageable pageable){
-        Page<ProductoDTO> page = productoService.listaPage(pageable).map(e -> productoMapper.toDTO(e));
+    public ResponseEntity<Page<ProductoDTO>> listPage(Pageable pageable) {
+        Page<ProductoDTO> page = productoService.listaPage(pageable)
+                            .map(productoMapper::toDTO);
         return ResponseEntity.ok(page);
     }
 }

@@ -96,26 +96,47 @@ public class ReportController {
     public ResponseEntity<Void> saveFileCloud(@RequestParam("file") MultipartFile multipartFile) {
         Path tempFilePath = null;
         try {
-            validateMultipartFile(multipartFile);
+            if (multipartFile == null || multipartFile.isEmpty()) {
+                throw new FileProcessingException("El archivo no puede estar vacío");
+            }
+
             tempFilePath = convertToFile(multipartFile).toPath();
-            
-            Map<String, Object> response = cloudinary.uploader().upload(
+
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
                 tempFilePath.toFile(), 
-                ObjectUtils.asMap("resource_type", "auto")
+                ObjectUtils.asMap(
+                    "resource_type", "auto",
+                    "timeout", 30000  
+                )
             );
             
-            JSONObject json = new JSONObject(response);
+            JSONObject json = new JSONObject(uploadResult);
             String url = json.getString("url");
-            logger.info("Archivo subido a Cloudinary. URL: {}", url);
+            String publicId = json.getString("public_id");
+            
+            logger.info("Archivo subido exitosamente a Cloudinary. Public ID: {}, URL: {}", publicId, url);
+            
             
             return ResponseEntity.ok().build();
+            
         } catch (IOException e) {
-            String errorMsg = "Error al subir archivo a Cloudinary: " + e.getMessage();
+            String errorMsg = "Error de E/S al procesar el archivo para Cloudinary: " + e.getMessage();
             logger.error(errorMsg, e);
             throw new FileProcessingException(errorMsg, e);
+            
+        } catch (RuntimeException e) {
+            String errorMsg = "Error inesperado al subir a Cloudinary: " + e.getMessage();
+            logger.error(errorMsg, e);
+            throw new FileProcessingException(errorMsg, e);
+            
         } finally {
             if (tempFilePath != null) {
-                deleteTempFile(tempFilePath);
+                try {
+                    Files.deleteIfExists(tempFilePath);
+                    logger.debug("Archivo temporal eliminado: {}", tempFilePath);
+                } catch (IOException e) {
+                    logger.warn("No se pudo eliminar el archivo temporal {}: {}", tempFilePath, e.getMessage());
+                }
             }
         }
     }
@@ -134,12 +155,5 @@ public class ReportController {
         }
     }
 
-    private void deleteTempFile(Path filePath) {
-        try {
-            Files.delete(filePath);
-            logger.debug("Archivo temporal eliminado: {}", filePath);
-        } catch (IOException e) {
-            logger.warn("No se pudo eliminar el archivo temporal {}: {}", filePath, e.getMessage());
-        }
-    }
+
 }
